@@ -1,12 +1,15 @@
+---
+
+---
+
 # iOS相关
 
 - ``RunLoop``：本质就是一个do while循环，当有事做时就做事，没事做时就休眠。
-
-  - Run Loop的处理两大类事件源：**Timer Source**和**Input Source**（包括performSelector *方法簇、Port或者自定义的Input Source），每个事件源都会**绑定**在Run Loop的某个特定模式mode上，而且只有RunLoop在这个模式下运行的时候，才会触发Timer和Input Source。
-
-  - Run Loop 运行时只能以一种固定的模式运行，如果我们需要它切换模式，只有停掉它，再重新开启它。
-
-  - source 0（手势识别）非基于port的，即用户触发的事件，需要手动唤醒线程，将当前线程由内核态切换到用户态；source 1（事件响应：硬件事件，触摸/锁屏/摇晃）基于port的，监听系统端口与通过内核和其他线程发送的消息，能主动唤醒runloop，接收分发系统事件。
+- Run Loop的处理两大类事件源：**Timer Source**和**Input Source**（包括performSelector *方法簇、Port或者自定义的Input Source），每个事件源都会**绑定**在Run Loop的某个特定模式mode上，而且只有RunLoop在这个模式下运行的时候，才会触发Timer和Input Source。
+  
+- Run Loop 运行时只能以一种固定的模式运行，如果我们需要它切换模式，只有停掉它，再重新开启它。
+  
+- source 0（手势识别）非基于port的，即用户触发的事件，需要手动唤醒线程，将当前线程由内核态切换到用户态；source 1（事件响应：硬件事件，触摸/锁屏/摇晃）基于port的，监听系统端口与通过内核和其他线程发送的消息，能主动唤醒runloop，接收分发系统事件。
 
 <img src="https://img-blog.csdn.net/20170514225238312?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxNDc5NTAyMA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt="RunLoop" style="zoom:50%;" />
 
@@ -30,7 +33,7 @@
 - 类的恒等运算符```===```和不恒等运算符``!==``。
 - 懒加载（延迟存储属性）：``lazy var``，当第一次被调用的时候才会计算其**初始值**的属性。
 - 可失败的构造器``init?``构造失败返回``nil``。
-- 析构器``deinit()``：只用于``class``，当该实例被复制为``nil``（没有引用）时调用。
+- 析构器``deinit()``：只用于``class``，当该实例被赋值为``nil``（没有引用）时调用。
 - ``is``：表示某个实例是否是某个类。
 - ``@autoclosure``：将参数自动封装为闭包参数。
 - ``guard``：
@@ -100,18 +103,18 @@ func example() {
 
   说 Swift 是函数式编程语言，是因为 Swift 支持 map, reduce, filter, flatmap 这类去除中间状态、数学函数式的方法，更加强调运算结果而不是中间过程。
 
+> 函数编程的主要思想是把运算过程尽量写成一系列嵌套的函数调用
+
 - ``strong``, ``weak``, `` unowned``：Swift使用ARC内存管理机制，当没有强引用时会释放。
 
   - strong 代表着强引用，是默认属性。当一个对象被声明为 strong 时，就表示父层级对该对象有一个强引用的指向。此时该对象的引用计数会增加1。
   - weak 代表着弱引用。当对象被声明为 weak 时，父层级对此对象没有指向，该对象的引用计数不会增加1。它在对象释放后弱引用也随即消失。继续访问该对象，==**程序会得到 nil，不会崩溃**==。
   - unowned 与弱引用本质上一样。唯一不同的是，对象在释放后，依然有一个无效的引用指向对象，它不是 Optional 也不指向 nil。如果继续访问该对象，==**程序就会崩溃**==。
-
 - 为什么将String，Array，Dictionary设计成值类型？
 
   - 值类型相比引用类型，最大的优势在于==内存使用的高效==。值类型在**栈**上操作，引用类型在**堆**上操作。栈上的操作仅仅是单个指针的上下移动，而堆上的操作则牵涉到合并、移位、重新链接等。也就是说Swift这样设计，大幅减少了堆上的内存分配和回收的次数。同时copy-on-write又将值传递和复制的开销降到了最低。
   - String，Array，Dictionary设计成值类型，也是为了==线程安全==考虑。通过Swift的let设置，使得这些数据达到了真正意义上的“不变”，它也从根本上解决了多线程中内存访问和操作顺序的问题。
   - 设计成值类型还可以提升==API的灵活度==。例如通过实现Collection这样的协议，我们可以遍历String，使得整个开发更加灵活高效。（面向协议的优势）
-
 - KVC和KVO
 
   - KVC：key-value-coding。Swift中的KeyPath。KeyPath<Root, Type>，使用：object[keyPath: ···]
@@ -177,7 +180,7 @@ public extension UIView {
 # SwiftUI
 
 - 介绍：SwiftUI 是苹果公司于 2019 年推出的 Apple Platform 的新一代声明式布局引擎。
-- AnimatableDate: VectorArithmetic。AnimatablePair
+- AnimatableData: VectorArithmetic。AnimatablePair
 - **多线程** ``DispatchQueue``：
 
 ```swift
