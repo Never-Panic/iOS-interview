@@ -93,7 +93,7 @@ func example() {
 
   - **直接派发（静态调用）**：最快的，编译器可优化，例如函数内联等。但是缺乏动态性，无法继承。
   - **函数表派发**：函数表派发具有动态性，在swift里函数表叫**Witness Table**，类会有一个数组来存储里面的函数指针。
-  - **消息机制派发**：当一个消息被派发，程序运行时就会按**照继承关系向上**查找被调用的函数。但是效率不高，所以通过缓存来提高效率，缓存后性能和函数表派发差不多。KVO和CoreData都是这种机制的运用。
+  - **消息机制派发**：当一个消息被派发，程序运行时就会按**照继承关系从下向上**查找被调用的函数。但是效率不高，所以通过缓存来提高效率，缓存后性能和函数表派发差不多。KVO和CoreData都是这种机制的运用。
 
 ![aHR0cHM6Ly91cGxvYWQtaW1hZ2VzLmppYW5zaHUuaW8vdXBsb2FkX2ltYWdlcy81NDY0NDktZDk4YWM2YzMwYTliOGNlNS5wbmc](./image/aHR0cHM6Ly91cGxvYWQtaW1hZ2VzLmppYW5zaHUuaW8vdXBsb2FkX2ltYWdlcy81NDY0NDktZDk4YWM2YzMwYTliOGNlNS5wbmc.png)
 
@@ -180,7 +180,46 @@ public extension UIView {
 # SwiftUI
 
 - 介绍：SwiftUI 是苹果公司于 2019 年推出的 Apple Platform 的新一代声明式布局引擎。
-- AnimatableData: VectorArithmetic。AnimatablePair
+
+- **布局**：
+
+  - 过程：
+
+    1. 父view为子view提供一个建议的size
+
+    2. 子view根据自身的特性，返回一个size
+
+    3. 父view根据子view返回的size为其进行布局
+
+  - `.frame`起的作用就是提供一个建议的size
+
+    ![frame参数](https://user-gold-cdn.xitu.io/2020/6/29/172fdd639ba76bca?imageView2/0/w/1280/h/960/ignore-error/1)
+
+    frame的ideal必须和fixedSize()一起使用才行。
+
+  - GeometryReader的功能之一：
+
+    1. 获取到父view的建议尺寸。 ``geo.size``
+    2. 获得它能够让我们获取到某个view相对某个坐标空间的bounds。``geo.frame(in: .global/.name("..."))`` 声明space：``.coordinateSpace(name: "spaceName")``
+
+  - ``.alignmentGuide(.leading) { d in d[.leading] }``：默认情况下相当于这种。其中d为一个``ViewDimensions``，包含了这个view的size和其对齐方式。
+
+  - 向父View传递信息
+
+    ```swift
+    public protocol PreferenceKey {
+      associatedtype Value
+      static var defaultValue: Self.Value { get }
+      static func reduce(value: inout Self.Value, nextValue: () -> Self.Value)
+    }
+    子View：.preference(key: NumericPreferenceKey.self, value: 1)
+    父View：.onPreferenceChange(NumberPreferenceKey.self) { value in
+    			// do something...
+        }
+    ```
+
+- 动画：AnimatableData: VectorArithmetic，AnimatablePair。
+
 - **多线程** ``DispatchQueue``：
 
 ```swift
@@ -245,6 +284,8 @@ try? context.save()
 let request = NSFetchRequest<Flight>(entityName: "Flight") 
 request.predicate = NSPredicate(format: "arrival < %@ and origin = %@", Date(), ksjc) 
 request.sortDescriptors = [NSSortDescriptor(key: "ident", ascending: true)] 
+删：
+context.deleteObject(flight)
 
 let flights = try? context.fetch(request) // past KSJC flights sorted by ident
 // flights is nil if fetch failed, [] if no such flights, otherwise [Flight]

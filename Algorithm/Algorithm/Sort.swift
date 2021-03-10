@@ -28,8 +28,8 @@ struct Sort {
             return nums
         }
         let midIndex = nums.count/2
-        let left = nums[0...midIndex-1].map{$0}
-        let right = nums[midIndex...].map{$0}
+        let left = Array(nums[0...midIndex])
+        let right = Array(nums[(midIndex+1)...])
         
         return merge(left: MergeSort(nums: left), right: MergeSort(nums: right))
     }
