@@ -35,6 +35,9 @@ struct PriorityQueue { // 用大堆实现
     
     public mutating func add (num: Int)  {
         arr[size] = num
+        if size == arr.count {
+            return
+        }
         size += 1
         float(index: size-1, val: num)
     }

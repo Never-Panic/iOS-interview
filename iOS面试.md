@@ -21,21 +21,59 @@
   4. 对于主线程来说，runloop在程序一启动就默认创建好了。
   5. 对于子线程来说，runloop是**==懒加载==**的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。
 
-  
 
 # Swift语言相关
 
 ## 语言相关
 
 - 捕获值：用于**嵌套函数**和**闭包**，外部的变量相对于嵌套函数是一个全局变量。
-- ``struct``为值类型，存储于栈区。``class``为引用类型，存储于堆区。
+
+  - 隐式捕获和显式捕获
+
+    ```swift
+    struct simpleClass {
+        var val = 0
+    }
+    
+    var x = simpleClass()
+    var y = simpleClass()
+    
+    let closure = { [x] in  
+        我们显式捕获了x，则在该闭包里的x就是let x = x。因为是struct值类型，所以下文输出"x=0"，如果是class的话那么x就是地址，输出则会变化。
+        隐式捕获了y，所以在调用y的时候才捕获，所以下文输出"y=10"。
+        print("x=\(x.val), y=\(y.val)")
+    }
+    
+    x.val = 10
+    y.val = 10
+    
+    closure()
+    ```
+
+  - ``weak``在捕获值中的应用
+
+    ```swift
+    [weak self]捕获self，避免循环引用，此时的self会变成可选值。
+    ```
+
+- ``@escaping``逃逸闭包：该闭包会在函数return后执行。
+
+- ``@autoclosure``自动闭包：将参数自动封装为闭包参数。
+
+- ``struct``,``enum``,``tuple``为值类型，存储于栈区。``class``为引用类型，存储于堆区。
+
 - Set、Dictionary、Array遵守Collections协议。
+
 - 类的恒等运算符```===```和不恒等运算符``!==``。
+
 - 懒加载（延迟存储属性）：``lazy var``，当第一次被调用的时候才会计算其**初始值**的属性。
+
 - 可失败的构造器``init?``构造失败返回``nil``。
+
 - 析构器``deinit()``：只用于``class``，当该实例被赋值为``nil``（没有引用）时调用。
+
 - ``is``：表示某个实例是否是某个类。
-- ``@autoclosure``：将参数自动封装为闭包参数。
+
 - ``guard``：
 
 ```swift
@@ -204,7 +242,7 @@ public extension UIView {
 
   - ``.alignmentGuide(.leading) { d in d[.leading] }``：默认情况下相当于这种。其中d为一个``ViewDimensions``，包含了这个view的size和其对齐方式。
 
-  - 向父View传递信息
+  - ``PreferenceKey``向父View传递信息
 
     ```swift
     public protocol PreferenceKey {
@@ -218,7 +256,7 @@ public extension UIView {
         }
     ```
 
-- 动画：AnimatableData: VectorArithmetic，AnimatablePair。
+- 动画：``AnimatableData: VectorArithmetic``，``AnimatablePair``。
 
 - **多线程** ``DispatchQueue``：
 
@@ -335,10 +373,6 @@ class Coordinator: NSObject, someDelegate {}
 func dismantleUIView{Controller}(view/controller, coordinator: Coordinator)
 ```
 
-# 计网相关
-
-# 操作系统相关
-
 # 其他
 
 ## 1.MVC/MVP/MVVM（框架模式）
@@ -396,8 +430,4 @@ Flutter是谷歌的移动UI框架，可以快速在iOS和Android上构建高质�
 Weex 致力于使开发者能基于通用跨平台的 Web 开发语言和开发经验，来构建 Android、iOS 和 Web 应用。简单来说，在集成了 WeexSDK 之后，你可以使用 JavaScript 语言和前端开发经验来开发移动应用。
 
 Weex 应用需要**依赖前端框架**来编写，但 Weex 并没有绑定、限制在特定的框架上。目前 Vue.js 和 Rax 是最广泛应用于 Weex 开发的前端框架，也是目前功能最全、最稳定的方案。
-
-# 项目回顾
-
-# 自我介绍
 
