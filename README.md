@@ -24,7 +24,74 @@
 
 # Swift语言相关
 
-## 语言相关
+## 基础知识
+
+- Set、Dictionary、Array遵守Collections协议。
+
+- 隐式解包`!`，当一个可选值在被赋值后，总是有值，那么就可以使用隐式解包，在`class`的初始化时常用。
+
+- **copy on write**：
+
+  - 线程安全：如果多个线程要修改原容器，会加锁，所以是线程安全的。
+  - 实现方式：在结构体内部存储了一个指向实际数据的引用reference，在不进行修改操作的**普通传递**过程中，都是将内部的reference的应用计数+1，在进行修改时，对内部的reference做一次copy操作，再在这个复制出来的数据进行真正的修改，防止和之前的reference产生意外的数据共享。
+  - 如果值类型里嵌套了引用类型，那么修改引用类型的值时，外层的值类型并不会拷贝，因为引用类型的地址并没有变化，相当于并没有修改值类型。
+
+- 类的恒等运算符```===```和不恒等运算符``!==``。
+
+- 懒加载（延迟存储属性）：``lazy var``，当第一次被调用的时候才会计算其**初始值**的属性。
+
+- 可失败的构造器``init?``构造失败返回``nil``。
+
+- 析构器``deinit()``：只用于``class``，当该实例被赋值为``nil``（没有引用）时调用。
+
+- ``is``：表示某个实例是否是某个类。
+
+- `@escaping`逃逸闭包：该闭包会在函数return后执行。
+
+- `@autoclosure`自动闭包：将参数自动封装为闭包参数。
+
+- `struct`,`enum`,`tuple`为值类型，存储于栈区。`class`, `closure`,`function`为引用类型，存储于堆区。
+
+- `class`的初始化`init`：
+
+  - **全能初始化**和**便利初始化**
+
+    - **全能初始化**：能初始化所有的非Optional的store property
+
+    - **便利初始化**`convenience init`：只初始化部分属性
+
+    - 全能初始化方法和便利初始化方法之间的调用规则：
+
+      1. 全能初始化方法必须调用父类的全能初始化方法
+      2. 便利初始化方法只能调用当前类的初始化方法，*不能调用父类的初始化方法*
+      3. 便利初始化方法，*最终**必须调用**当前类的全能初始化方法*
+
+      ![初始化](https://upload-images.jianshu.io/upload_images/1242672-e9fbb88f8e8556f9.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200)
+
+  - **类的两段初始化**
+
+    - 安全性检查（编译阶段）
+
+      1. 全能初始化方法必须确保在父类被初始化之前，所有自己的属性被正确初始化。
+      2. 再给被继承的属性赋值之前，必须调用父类的全能初始化方法，也就是说，父类必须被初始化之后才能给被继承的属性赋值。
+      3. 便利初始化方法在对属性赋值之前，必须调用其它初始化方法。（所以很多时候`convenience init()`的第一行就为`self.init()`）
+      4. 在当前类没有被正确初始化之前（即第一阶段），==**不能调用**==类的实例方法和读取实例属性。
+
+    - 两个阶段（从下至上，又从上至下）
+
+      - **第一阶段**：
+
+        1. 调用全能初始化方法或者便利初始化方法，系统分配内存，但是并未对这个类进行初始化
+        2. 在全能初始化方法中初始化所有属性
+        3. 调用父类的全能初始化方法执行前两个相同的步骤
+        4. 沿着继承链不断向上一直到根类为止
+        5. 这个时候在继承链上的类都被正确的初始化，第一阶段完成
+
+      - **第二阶段**：
+
+        1. 从根类开始向下返回，每个类的全能初始化方法都能够进行更多的对类的初始化操作，包括可以使用属性，可以调用实例方法
+
+        2. 最后，任何便利方法都有机会去对类进行更多的初始化
 
 - 捕获值：用于**嵌套函数**和**闭包**，外部的变量相对于嵌套函数是一个全局变量。
 
@@ -38,10 +105,10 @@
     var x = simpleClass()
     var y = simpleClass()
     
-    let closure = { [x] in  
+    let closure = { [x] /* 捕获列表 */ in  
         我们显式捕获了x，则在该闭包里的x就是let x = x。因为是struct值类型，所以下文输出"x=0"，如果是class的话那么x就是地址，输出则会变化。
         隐式捕获了y，所以在调用y的时候才捕获，所以下文输出"y=10"。
-        print("x=\(x.val), y=\(y.val)")
+        print("x=\(x.val), y=\(y.val)") // 输出"x=0, y=10"
     }
     
     x.val = 10
@@ -50,66 +117,70 @@
     closure()
     ```
 
-  - ``weak``在捕获值中的应用
+- **ARC(automatic reference counting)内存管理机制**
 
-    ```swift
-    [weak self]捕获self，避免循环引用，此时的self会变成可选值。
-    ```
+  - 引用计数只适用于`class`的实例，不适用于`struct`和`enum`（因为是值类型）。
+  - ``strong``, ``weak``, `` unowned``：
+    - strong 代表着强引用，是默认属性。当一个对象被声明为 strong 时，就表示父层级对该对象有一个强引用的指向。此时该对象的引用计数会增加1。
+    - weak 代表着弱引用。当对象被声明为 weak 时，父层级对此对象没有指向，该对象的引用计数不会增加1。它在对象释放后弱引用也随即消失。继续访问该对象，==**程序会得到 nil，不会崩溃**==。用`weak`修饰的变量必然是**可选类型**，因为可以置`nil`。在闭包中修饰的变量也自动变为可选类型。
+    - unowned 与弱引用本质上一样。唯一不同的是，对象在释放后，依然有一个无效的引用指向对象，它不是 Optional 也不指向 nil。如果继续访问该对象，==**程序就会崩溃**==。用`unowned`修饰的变量不会变成可选类型。
+    - weak和unowned的使用场景：当另一个实例的生命周期较短时，即当另一个实例可以**首先被释放**时，使用`weak`引用。相反，当另一个实例有相同的生命周期或更长的生命周期时，使用`unowned`引用。
+  
+- ``enum``的``associated value``
 
-- ``@escaping``逃逸闭包：该闭包会在函数return后执行。
-
-- ``@autoclosure``自动闭包：将参数自动封装为闭包参数。
-
-- ``struct``,``enum``,``tuple``为值类型，存储于栈区。``class``为引用类型，存储于堆区。
-
-- Set、Dictionary、Array遵守Collections协议。
-
-- 类的恒等运算符```===```和不恒等运算符``!==``。
-
-- 懒加载（延迟存储属性）：``lazy var``，当第一次被调用的时候才会计算其**初始值**的属性。
-
-- 可失败的构造器``init?``构造失败返回``nil``。
-
-- 析构器``deinit()``：只用于``class``，当该实例被赋值为``nil``（没有引用）时调用。
-
-- ``is``：表示某个实例是否是某个类。
+  ```swift
+  enum Barcode {
+      case upc(Int, Int, Int, Int)
+      case qrCode(String)
+  }
+  
+  关联值如果当作常数取出，那么用let，如果当作变量取出，那么用var
+  switch productBarcode {
+  case .upc(let numberSystem, let manufacturer, let product, let check):
+      print("UPC: \(numberSystem), \(manufacturer), \(product), \(check).")
+  case .qrCode(var productCode):
+    	productCode.append("suffix")
+      print("QR code: \(productCode).")
+  }
+  ```
 
 - ``guard``：
 
-```swift
-声明： 
-      1> guard 必须使用在函数里面
-      2> guard 语句必须带有else语句   
-语法如下：
-       · 当条件表达式为 true 时跳过 else 语句内容，执行语句组内容
-       · 条件表达式为 false 时执行 else 内容，跳过语句不能fallthrough，所以一般为return、break、continue、throw。
-例子：
-func example() {
-    guard 1 < 2 else {
-        print("不会输出")
-        return
-    }
-    guard 1 > 2 else {
-        print("一定输出")
-        return
-    }
-}
-```
+  ```swift
+  声明： 
+        1> guard 必须使用在函数里面
+        2> guard 语句必须带有else语句   
+  语法如下：
+         · 当条件表达式为 true 时跳过 else 语句内容，执行语句组内容
+         · 条件表达式为 false 时执行 else 内容，跳过语句不能fallthrough，所以一般为return、break、continue、throw。
+  例子：
+  func example() {
+      guard 1 < 2 else {
+          print("不会输出")
+          return
+      }
+      guard 1 > 2 else {
+          print("一定输出")
+          return
+      }
+  }
+  ```
 
 - ``defer``：就是 `defer` block 里的代码会在函数 return 之前执行，无论函数是从哪个分支 return 的，还是有 throw，还是自然而然走到最后一行。
 
-> 函数必须先执行到 defer 才会触发
+  ```swift
+  例子：
+  func example() {
+      defer {
+          print("最后输出")
+      }
+      print("先输出")
+  }
+  ```
 
-```swift
+  > 函数必须先执行到 defer 才会触发
 
-例子：
-func example() {
-    defer {
-        print("最后输出")
-    }
-    print("先输出")
-}
-```
+  
 
 - 访问控制：
 
@@ -143,11 +214,6 @@ func example() {
 
 > 函数编程的主要思想是把运算过程尽量写成一系列嵌套的函数调用
 
-- ``strong``, ``weak``, `` unowned``：Swift使用ARC内存管理机制，当没有强引用时会释放。
-
-  - strong 代表着强引用，是默认属性。当一个对象被声明为 strong 时，就表示父层级对该对象有一个强引用的指向。此时该对象的引用计数会增加1。
-  - weak 代表着弱引用。当对象被声明为 weak 时，父层级对此对象没有指向，该对象的引用计数不会增加1。它在对象释放后弱引用也随即消失。继续访问该对象，==**程序会得到 nil，不会崩溃**==。
-  - unowned 与弱引用本质上一样。唯一不同的是，对象在释放后，依然有一个无效的引用指向对象，它不是 Optional 也不指向 nil。如果继续访问该对象，==**程序就会崩溃**==。
 - 为什么将String，Array，Dictionary设计成值类型？
 
   - 值类型相比引用类型，最大的优势在于==内存使用的高效==。值类型在**栈**上操作，引用类型在**堆**上操作。栈上的操作仅仅是单个指针的上下移动，而堆上的操作则牵涉到合并、移位、重新链接等。也就是说Swift这样设计，大幅减少了堆上的内存分配和回收的次数。同时copy-on-write又将值传递和复制的开销降到了最低。
@@ -252,8 +318,8 @@ public extension UIView {
     }
     子View：.preference(key: NumericPreferenceKey.self, value: 1)
     父View：.onPreferenceChange(NumberPreferenceKey.self) { value in
-    			// do something...
-        }
+              // do something...
+            }
     ```
 
 - 动画：``AnimatableData: VectorArithmetic``，``AnimatablePair``。
@@ -293,8 +359,8 @@ autoSaveCancellable = $emojiArt.sink { (emojiArt) in
 Publisher<Output, Failure> // Failure can be Never
 
 cancellable = myPublisher.sink(
-			receiveCompletion:{result in...}, //result is a Completion<Failure> enum
-      receiveValue: { thingThePublisherPublishes in . . . }
+			receiveCompletion:{ result in ... }, //result is a Completion<Failure> enum
+      receiveValue: { thingThePublisherPublishes in ... }
   )
 ```
 
