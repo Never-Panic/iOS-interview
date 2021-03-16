@@ -32,8 +32,42 @@
 
 - **copy on write**：
 
+  - 在 Swift 标准库中，像是 Array，Dictionary 和 Set 这样的==集合类型==是通过一种叫做写时复制 (copy-on-write) 的技术实现的。
+
+  - 手动实现COW：
+
+    ```swift
+    final class Ref<T> {
+        var value: T
+        init(value: T) {
+            self.value = value
+        }
+    }
+    
+    // 使用一个struct包装上个class
+    struct Box<T> {
+        private var ref: Ref<T>
+        init(value: T) {
+            ref = Ref(value: value)
+        }
+     
+        var value: T {
+            get { return ref.value }
+            set {
+                guard isKnownUniquelyReferenced(&ref) else {
+                    ref = Ref(value: newValue)
+                    return
+                }
+                ref.value = newValue
+            }
+        }
+    }
+    ```
+
   - 线程安全：如果多个线程要修改原容器，会加锁，所以是线程安全的。
+
   - 实现方式：在结构体内部存储了一个指向实际数据的引用reference，在不进行修改操作的**普通传递**过程中，都是将内部的reference的应用计数+1，在进行修改时，对内部的reference做一次copy操作，再在这个复制出来的数据进行真正的修改，防止和之前的reference产生意外的数据共享。
+
   - 如果值类型里嵌套了引用类型，那么修改引用类型的值时，外层的值类型并不会拷贝，因为引用类型的地址并没有变化，相当于并没有修改值类型。
 
 - 类的恒等运算符```===```和不恒等运算符``!==``。
@@ -126,6 +160,10 @@
     - unowned 与弱引用本质上一样。唯一不同的是，对象在释放后，依然有一个无效的引用指向对象，它不是 Optional 也不指向 nil。如果继续访问该对象，==**程序就会崩溃**==。用`unowned`修饰的变量不会变成可选类型。
     - weak和unowned的使用场景：当另一个实例的生命周期较短时，即当另一个实例可以**首先被释放**时，使用`weak`引用。相反，当另一个实例有相同的生命周期或更长的生命周期时，使用`unowned`引用。
   
+  > Java的垃圾回收机制除了引用计数的方法外，还有一种**可达性分析**算法。通过一系列的称为 "GC Roots" 的对象作为起始点，从这些节点开始向下搜索，搜索所走过的路径称为引用链（Reference Chain），当一个对象到 GC Roots 没有任何引用链相连时，则证明此对象是不可用的。此算法解决了上述循环引用的问题。
+  >
+  > ![CGRoot](https://upload-images.jianshu.io/upload_images/2184951-06859aad2e07258d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
 - ``enum``的``associated value``
 
   ```swift
