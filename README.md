@@ -5,7 +5,7 @@
 # iOS相关
 
 - ``RunLoop``：本质就是一个do while循环，当有事做时就做事，没事做时就休眠。
-- Run Loop的处理两大类事件源：**Timer Source**和**Input Source**（包括performSelector *方法簇、Port或者自定义的Input Source），每个事件源都会**绑定**在Run Loop的某个特定模式mode上，而且只有RunLoop在这个模式下运行的时候，才会触发Timer和Input Source。
+- Run Loop的处理两大类事件源：**Timer Source**和**Input Source**（包括performSelector方法簇、Port或者自定义的Input Source），每个事件源都会**绑定**在Run Loop的某个特定模式mode上，而且只有RunLoop在这个模式下运行的时候，才会触发Timer和Input Source。
   
 - Run Loop 运行时只能以一种固定的模式运行，如果我们需要它切换模式，只有停掉它，再重新开启它。
   
@@ -74,8 +74,6 @@
 
 - 懒加载（延迟存储属性）：``lazy var``，当第一次被调用的时候才会计算其**初始值**的属性。
 
-- ``is``：表示某个实例是否是某个类。
-
 - `@escaping`逃逸闭包：该闭包会在函数return后执行。
 
 - `@autoclosure`自动闭包：将参数自动封装为闭包参数。
@@ -97,7 +95,7 @@
     - 全能初始化方法和便利初始化方法之间的调用规则：
 
       1. 全能初始化方法必须调用父类的全能初始化方法
-      2. 便利初始化方法只能调用当前类的初始化方法，*不能调用父类的初始化方法*
+      2. 便利初始化方法只能调用**当前类**的初始化方法，*不能调用父类的初始化方法*
       3. 便利初始化方法，*最终**必须调用**当前类的全能初始化方法*
 
       <img src="https://upload-images.jianshu.io/upload_images/1242672-e9fbb88f8e8556f9.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200" alt="初始化" style="zoom:67%;" />
@@ -126,6 +124,59 @@
         1. 从根类开始向下返回，每个类的全能初始化方法都能够进行更多的对类的初始化操作，包括可以使用属性，可以调用实例方法
 
         2. 最后，任何**便利方法**都有机会去对类进行更多的初始化
+
+- 类型转换：（也可用于检查一个类型是否遵守了某个协议）
+
+  - ``is``：表示某个实例是否是某个类。
+
+  - `as`：向下转型。`as!`/`as?`
+
+    > 强制转换实际上并**不修改**实例或改变其值。底层实例**保持不变**；它只是作为被强制转换到的类型的实例进行**处理和访问**。
+
+  - 两种特殊的类型：
+
+    1. `Any`：任何类型的实例，包括函数类型和可选类型。
+    2. `AnyObject`：任何`class`的示例
+
+    ```swift
+    // 使用Any的数组：
+    var things = [Any]()
+    
+    things.append(0)
+    things.append(0.0)
+    things.append(42)
+    things.append(3.14159)
+    things.append("hello")
+    things.append((3.0, 5.0))
+    things.append(Movie(name: "Ghostbusters", director: "Ivan Reitman"))
+    things.append({ (name: String) -> String in "Hello, \(name)" })
+    
+    // 遍历该数组
+    for thing in things {
+        switch thing {
+        case 0 as Int:
+            print("zero as an Int")
+        case 0 as Double:
+            print("zero as a Double")
+        case let someInt as Int:
+            print("an integer value of \(someInt)")
+        case let someDouble as Double where someDouble > 0:
+            print("a positive double value of \(someDouble)")
+        case is Double:
+            print("some other double value that I don't want to print")
+        case let someString as String:
+            print("a string value of \"\(someString)\"")
+        case let (x, y) as (Double, Double):
+            print("an (x, y) point at \(x), \(y)")
+        case let movie as Movie:
+            print("a movie called \(movie.name), dir. \(movie.director)")
+        case let stringConverter as (String) -> String:
+            print(stringConverter("Michael"))
+        default:
+            print("something else")
+        }
+    }
+    ```
 
 - 捕获值：用于**嵌套函数**和**闭包**，外部的变量相对于嵌套函数是一个全局变量。
 
@@ -229,6 +280,61 @@
 | internal(默认) | 在模块内部可以访问到，超出模块内部就不可被访问了。           |
 | fileprivate    | 文件内私有，只能在当前源文件中使用。                         |
 | private        | 只能在类中访问，离开了这个类或者结构体的作用域外面就无法访问。 |
+
+- **冲突访问、内存安全**：
+
+  - 出现冲突的条件：
+
+    1. 至少有一个是**写访问或非原子访问**。
+    2. 它们访问内存中的**相同位置**。
+    3. 它们的持续**时间重叠**。
+
+  - memory safe的条件：
+
+    1. 你只访问一个实例的存储属性，而不是计算属性或类。
+    2. 该结构体是局部变量，而不是全局变量。
+    3. 该结构要么没有被任何闭包捕获，要么只有被不逃逸的闭包捕获。
+
+  - In-out:
+
+    ```swift
+    var stepSize = 1
+    
+    func increment(_ number: inout Int) {
+        number += stepSize
+    }
+    
+    increment(&stepSize)
+    // Error: conflicting accesses to stepSize
+    ```
+
+    <img src="https://docs.swift.org/swift-book/_images/memory_increment_2x.png" alt="inout" style="zoom:67%;" />
+
+  - self:
+
+    ```swift
+    extension Player {
+        mutating func shareHealth(with teammate: inout Player) {
+            balance(&teammate.health, &health)
+        }
+    }
+    
+    var oscar = Player(name: "Oscar", health: 10, energy: 10)
+    oscar.shareHealth(with: &oscar)
+    // Error: conflicting accesses to oscar
+    ```
+
+    <img src="https://docs.swift.org/swift-book/_images/memory_share_health_oscar_2x.png" alt="self" style="zoom:67%;" />
+
+  - Property:
+
+    ```swift
+    var playerInformation = (health: 10, energy: 20)
+    balance(&playerInformation.health, &playerInformation.energy)
+    // Error: conflicting access to properties of playerInformation
+    ```
+
+    因为访问值类型的某一个属性时，需要的是**整个值**的write access。
 
 - **派发机制**：swift派发的目的是让CPU知道被调用的函数在哪里。swift语言支持编译行语言的==直接派发==、==函数表派发==、==消息机制派发==。
 
@@ -426,11 +532,12 @@ try? context.save()
 let request = NSFetchRequest<Flight>(entityName: "Flight") 
 request.predicate = NSPredicate(format: "arrival < %@ and origin = %@", Date(), ksjc) 
 request.sortDescriptors = [NSSortDescriptor(key: "ident", ascending: true)] 
-删：
-context.deleteObject(flight)
 
 let flights = try? context.fetch(request) // past KSJC flights sorted by ident
 // flights is nil if fetch failed, [] if no such flights, otherwise [Flight]
+
+删：
+context.deleteObject(flight)
 
 和SwiftUI集成：
 @FetchRequest(entity:sortDescriptors:predicate:) var flights: FetchedResults<Flight>
